@@ -1,0 +1,4 @@
+name: DWIMotionCorrect instructions
+markdown: redcarpet
+highlighter: pygments
+baseurl: /dwimotioncorrect
