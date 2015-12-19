@@ -34,6 +34,7 @@ def usage():
 	print
 	print "Options:"
 	print "\t-m <output mat file>: contains all of the transformation matrices concatenated"
+	print "\t-p use GNU parallel to perform the registrations in parallel, uses GNU parallel"
 
 def gluInvertMatrix(m):
 	TestInv = numpy.zeros([4, 4])
@@ -162,17 +163,20 @@ def gluInvertMatrix(m):
 
 #def main():
 		
-opts, args = getopt.getopt(sys.argv[1:], "m:", [])
+opts, args = getopt.getopt(sys.argv[1:], "mp:", [])
 	
 if len(args) < 2:
 	usage()
 	quit()
 
 OutputMATFile = None
+parallelMode = False
 
 for o, a in opts:
 	if o == '-m':
 		OutputMATFile = a
+	if o == '-p':
+		parallelMode = True
 
 DWIImageName = args[0]
 #GradientTableFile = args[1]
@@ -204,6 +208,11 @@ if ReferenceIDX < 0 or ReferenceIDX >= NumTotalVolumes:
 	print "Reference index is out of bounds"
 	exit()
 
+if parallelMode == True:
+	parallelPath = distutils.spawn.find_executable('parallel')
+	if parallelPath == None:
+		print "parallel was requested but the executable \"parallel\" was not found"
+		parallelMode = False
 #GradientTableFileFID = open(GradientTableFile, 'r')
 #GradientTableFileReader = csv.reader(GradientTableFileFID, delimiter='\t')
 
@@ -256,8 +265,9 @@ subprocess.call(['fslmaths', ReferenceVolume + "_brain_mask_weighted", '-eroF', 
 
 outputFiles = list()
 
-parallelSwitch = '-j+0'
-parallelPipe = subprocess.Popen(['parallel', parallelSwitch], stdin = subprocess.PIPE, stdout = subprocess.PIPE)
+if parallelMode == True:
+	parallelSwitch = '-j+0'
+	parallelPipe = subprocess.Popen(['parallel', parallelSwitch], stdin = subprocess.PIPE, stdout = subprocess.PIPE)
 
 for curVolume in range(NumTotalVolumes):
 	curMovingFile = os.path.join(TempDir, "tmp" + str(curVolume).zfill(4))
@@ -269,11 +279,14 @@ for curVolume in range(NumTotalVolumes):
 
 	#subprocess.call(['flirt', '-in', curMovingFile, '-ref', ReferenceVolumePlain, '-out', curMovingFile + "to_tmp0000", '-omat', TransformFileName, '-nosearch', '-paddingsize', '1'])
 	#print " ".join(CMD) + "\n"
-	parallelPipe.stdin.write(" ".join(CMD) + "\n")
-	#subprocess.call(CMD)
+	if parallelMode == True:
+		parallelPipe.stdin.write(" ".join(CMD) + "\n")
+	else:
+		subprocess.call(CMD)
 
-parallelPipe.communicate()
-parallelPipe.stdin.close()
+if parallelMode == True:
+	parallelPipe.communicate()
+	parallelPipe.stdin.close()
 
 Iteration = 1;
 
@@ -317,7 +330,8 @@ while True:
 	if len(WeightedFallback) > 0 and Iteration < 10:
 	#if True == False:
 		#print "Initial mask failed, iteration " + str(Iteration) + ", trying fallback on: " + " ".join([str(i) for i in WeightedFallback])
-		parallelPipe = subprocess.Popen(['parallel', parallelSwitch], stdin = subprocess.PIPE, stdout = subprocess.PIPE)
+		if parallelMode == True:
+			parallelPipe = subprocess.Popen(['parallel', parallelSwitch], stdin = subprocess.PIPE, stdout = subprocess.PIPE)
 
 		for curVolume in WeightedFallback:
 			curMovingFile = os.path.join(TempDir, "tmp" + str(curVolume).zfill(4))
@@ -327,11 +341,14 @@ while True:
 
 			#subprocess.call(['flirt', '-in', curMovingFile, '-ref', ReferenceVolumePlain, '-out', curMovingFile + "to_tmp0000", '-omat', TransformFileName, '-nosearch', '-paddingsize', '1'])
 			#print " ".join(CMD) + "\n"
-			parallelPipe.stdin.write(" ".join(CMD) + "\n")
-			#subprocess.call(CMD)
-
-		parallelPipe.communicate()
-		parallelPipe.stdin.close()
+			if parallelMode == True:
+				parallelPipe.stdin.write(" ".join(CMD) + "\n")
+			else:
+				subprocess.call(CMD)
+			
+		if parallelMode == True:
+			parallelPipe.communicate()
+			parallelPipe.stdin.close()
 		# dilate the fallback in preparation for the next iteration
 		subprocess.call(['fslmaths', ReferenceVolume + "_brain_mask_weighted_fallback", '-dilF', ReferenceVolume + "_brain_mask_weighted_fallback", '-odt', 'float'])
 		Iteration = Iteration + 1
