@@ -181,7 +181,11 @@ for o, a in opts:
 DWIImageName = args[0]
 #GradientTableFile = args[1]
 OutputFile = args[1]
-ReferenceIDX = int(args[2])
+try:
+	ReferenceIDX = int(args[2])
+except e:
+	print "The reference index was not an integer"
+	quit()
 
 #NI = NiftiImage(DWIImageName)
 
