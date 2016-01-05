@@ -18,7 +18,6 @@ import math
 
 import getopt
 
-from scipy.misc import imread, imsave
 import scipy.io
 
 import tempfile
