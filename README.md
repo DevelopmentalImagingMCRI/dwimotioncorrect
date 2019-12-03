@@ -19,10 +19,11 @@ _DWIEddyCorrectMI_ is a python script with the following dependencies:
 * _GNU Parallel_ (optional)
 
 ## synopsis
+```
+DWIEddyCorrectMI [-p] [-m <output mat file>] <input file> <output file> <reference index>
+```
 
-_DWIEddyCorrectMI_ [-p] [-m <output mat file>] <input file> <output file> <reference index>
-
-Performs alignment of each volume in <input file> to the image in the input file specified by <reference index>; the first volume is 0
+Performs alignment of each volume in ```<input file>``` to the image in the input file specified by ```<reference index>```; the first volume is 0.
 
 ### Options
 * -m <output mat file>: contains all of the transformation matrices concatenated
